@@ -1,0 +1,50 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model User {
+  id            String   @id @default(cuid())
+  username      String   @unique
+  followerCount Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  posts     Post[]
+  following Follow[] @relation("Following")
+  followers Follow[] @relation("Followers")
+}
+
+model Follow {
+  followerId String
+  followeeId String
+  createdAt  DateTime @default(now())
+
+  follower User @relation("Following", fields: [followerId], references: [id], onDelete: Cascade)
+  followee User @relation("Followers", fields: [followeeId], references: [id], onDelete: Cascade)
+
+  @@id([followerId, followeeId])
+
+  @@index([followerId])
+  @@index([followeeId])
+}
+
+model Post {
+  id        String   @id @default(cuid())
+  authorId  String
+  content   String
+  createdAt DateTime @default(now())
+
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([authorId, createdAt(sort: Desc)])
+}
