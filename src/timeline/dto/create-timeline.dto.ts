@@ -1,1 +1,3 @@
-export class CreateTimelineDto {}
+export class CreateTimelineDto {
+    userId : string;
+}

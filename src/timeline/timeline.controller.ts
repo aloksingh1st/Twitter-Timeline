@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { TimelineService } from './timeline.service';
 import { CreateTimelineDto } from './dto/create-timeline.dto';
 import { UpdateTimelineDto } from './dto/update-timeline.dto';
+import { TimelineQueryDto } from './dto/timeline-query.dto';
 
 @Controller('timeline')
 export class TimelineController {
@@ -12,15 +13,15 @@ export class TimelineController {
     return this.timelineService.create(createTimelineDto);
   }
 
-  @Get()
-  findAll() {
-    return this.timelineService.findAll();
+  @Get(':userId')
+  findAll(@Param('userId') userId: string, @Query() timelineQueryDto: TimelineQueryDto) {
+    return this.timelineService.findAll(userId, timelineQueryDto);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.timelineService.findOne(+id);
-  }
+  // @Get(':id')
+  // findOne(@Param('id') id: string) {
+  //   return this.timelineService.findOne(+id);
+  // }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateTimelineDto: UpdateTimelineDto) {
