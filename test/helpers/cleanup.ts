@@ -1,11 +1,13 @@
+// test/helpers/cleanup.ts
+
 import { PrismaService } from '../../src/prisma/prisma.service';
 
 export async function cleanupDatabase(prisma: PrismaService) {
-    await prisma.$executeRawUnsafe(`
+  await prisma.$executeRawUnsafe(`
     TRUNCATE TABLE
-      follows,
-      posts,
-      users
+      "Follow",
+      "Post",
+      "User"
     RESTART IDENTITY CASCADE;
   `);
 }
