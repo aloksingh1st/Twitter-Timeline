@@ -12,7 +12,7 @@ async function main() {
     await prisma.post.deleteMany();
     await prisma.user.deleteMany();
 
-    await seedUsers(1000);
+    await seedUsers();
     await seedFollows();
     await seedPosts();
 

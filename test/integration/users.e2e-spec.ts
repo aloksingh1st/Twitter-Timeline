@@ -48,6 +48,8 @@ describe('UserController (e2e)', () => {
         },
       });
 
+      console.log('User from DB:', user);
+
       expect(user).not.toBeNull();
       expect(user?.username).toBe('alice');
     });
@@ -56,6 +58,7 @@ describe('UserController (e2e)', () => {
       const payload = {
         username: 'alice',
       };
+
 
       await request(app.getHttpServer())
         .post('/users')
@@ -66,6 +69,8 @@ describe('UserController (e2e)', () => {
         .post('/users')
         .send(payload)
         .expect(409);
+
+      console.log('response ', response.body);
 
       expect(response.body.message).toBe('Username already exists');
     });
