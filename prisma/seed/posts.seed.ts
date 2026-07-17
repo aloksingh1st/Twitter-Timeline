@@ -1,19 +1,16 @@
-import { PrismaClient } from '@prisma/client';
-import { faker } from '@faker-js/faker';
-import { chunk, randomDate, randomInt } from './utils';
-import { SeedConfig } from './config';
+import { PrismaClient } from "@prisma/client";
+import { faker } from "@faker-js/faker";
 
+import { SeedConfig } from "./config";
+import { UserBehavior } from "./profiles";
+import { SeedUser } from "./types";
+import { randomDate, randomInt } from "./utils";
 
-const prisma = new PrismaClient();
-
-export async function seedPosts() {
-    console.log("Creating posts...");
-
-    const users = await prisma.user.findMany({
-        select: {
-            id: true,
-        },
-    });
+export async function seedPosts(
+    prisma: PrismaClient,
+    users: SeedUser[],
+) {
+    console.log("Seeding posts...");
 
     const posts: {
         authorId: string;
@@ -21,14 +18,17 @@ export async function seedPosts() {
         createdAt: Date;
     }[] = [];
 
+    let totalPosts = 0;
+
     for (const user of users) {
-        // const totalPosts = randomInt(50, 150);
-        const totalPosts = randomInt(
-            SeedConfig.POSTS.MIN_PER_USER,
-            SeedConfig.POSTS.MAX_PER_USER,
+        const behavior = UserBehavior[user.role];
+
+        const postCount = randomInt(
+            behavior.POSTS.MIN,
+            behavior.POSTS.MAX,
         );
 
-        for (let i = 0; i < totalPosts; i++) {
+        for (let i = 0; i < postCount; i++) {
             posts.push({
                 authorId: user.id,
                 content: faker.lorem.sentence(),
@@ -36,16 +36,24 @@ export async function seedPosts() {
                     SeedConfig.RANDOM.POST_HISTORY_DAYS,
                 ),
             });
+
+            totalPosts++;
+
+            if (posts.length >= SeedConfig.BATCH.SIZE) {
+                await prisma.post.createMany({
+                    data: posts,
+                });
+
+                posts.length = 0;
+            }
         }
     }
 
-    console.log(`Generated ${posts.length} posts`);
-
-    for (const batch of chunk(posts, SeedConfig.BATCH.SIZE)) {
+    if (posts.length > 0) {
         await prisma.post.createMany({
-            data: batch,
+            data: posts,
         });
     }
 
-    console.log("Posts created.");
+    console.log(`✓ Created ${totalPosts} posts`);
 }
