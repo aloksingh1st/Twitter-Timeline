@@ -18,6 +18,12 @@ export const SeedProfiles = {
         CELEBRITIES: 50,
         POWER: 450,
     },
+
+    XLARGE: {
+        USERS: 100_000,
+        CELEBRITIES: 500,
+        POWER: 4_500,
+    },
 } as const;
 
 
