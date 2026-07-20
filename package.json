@@ -25,7 +25,8 @@
     "test:e2e:reset": "dotenv -e .env.test -- prisma migrate reset --force --skip-seed",
     "test:e2e:all": "npm run test:e2e:prepare && npm run test:e2e",
     "bench:timeline": "tsx benchmarks/autocannon/timeline.ts",
-    "bench:posts": "tsx benchmarks/autocannon/create-post.ts"
+    "bench:posts": "tsx benchmarks/autocannon/create-post.ts",
+    "bench:follow": "tsx benchmarks/autocannon/follow.ts"
   },
   "dependencies": {
     "@faker-js/faker": "^10.5.0",
