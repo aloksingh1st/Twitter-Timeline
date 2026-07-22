@@ -39,15 +39,33 @@ export class TimelineService {
       throw new NotFoundException('User not found');
     }
 
-    // 2. Fetch followees
-    const follows = await this.prisma.follow.findMany({
-      where: {
-        followerId: userId,
-      },
-      select: {
-        followeeId: true,
-      },
-    });
+
+
+    const cacheKey = `following:${userId}`;
+
+    const cached = await this.redis.get(cacheKey);
+
+    let follows;
+
+    if (cached) {
+      follows = JSON.parse(cached);
+    } else {
+      follows = await this.prisma.follow.findMany({
+        where: {
+          followerId: userId,
+        },
+        select: {
+          followeeId: true,
+        },
+      });
+
+      await this.redis.set(
+        cacheKey,
+        JSON.stringify(follows),
+        "EX",
+        300,
+      );
+    }
 
     const followeeIds = follows.map(f => f.followeeId);
 
