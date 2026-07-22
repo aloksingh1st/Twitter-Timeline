@@ -13,6 +13,7 @@ import { MetricsModule } from './metrics/metrics.module';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    MetricsModule,
     PrismaModule,
     UserModule,
     FollowModule,
