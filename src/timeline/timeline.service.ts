@@ -6,12 +6,14 @@ import { PrismaService } from '../../src/prisma/prisma.service';
 import { TimelineQueryDto } from './dto/timeline-query.dto';
 import { Prisma } from '@prisma/client';
 import Redis from 'ioredis';
+import { MetricsService } from 'src/metrics/metrics.service';
 
 @Injectable()
 export class TimelineService {
   constructor(private readonly prisma: PrismaService,
     @Inject('REDIS_CLIENT')
     private readonly redis: Redis,
+    private readonly metrics: MetricsService,
   ) { }
 
   create(createTimelineDto: CreateTimelineDto) {
@@ -48,8 +50,16 @@ export class TimelineService {
     let follows;
 
     if (cached) {
+      this.metrics.cacheHits.inc({
+        cache: "following",
+      });
       follows = JSON.parse(cached);
     } else {
+
+      this.metrics.cacheMisses.inc({
+        cache: "following",
+      });
+
       follows = await this.prisma.follow.findMany({
         where: {
           followerId: userId,

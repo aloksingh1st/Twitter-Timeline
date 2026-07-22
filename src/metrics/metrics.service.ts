@@ -15,6 +15,9 @@ export class MetricsService {
     readonly httpRequestDuration: Histogram<string>;
     readonly httpRequestsInFlight: Gauge<string>;
 
+    readonly cacheHits: Counter<string>;
+    readonly cacheMisses: Counter<string>;
+
     constructor() {
         collectDefaultMetrics({
             register: this.registry,
@@ -49,6 +52,22 @@ export class MetricsService {
         this.httpRequestsInFlight = new Gauge({
             name: "http_requests_in_flight",
             help: "Current HTTP requests being processed",
+            registers: [this.registry],
+        });
+
+
+
+        this.cacheHits = new Counter({
+            name: "redis_cache_hits_total",
+            help: "Total Redis cache hits",
+            labelNames: ["cache"],
+            registers: [this.registry],
+        });
+
+        this.cacheMisses = new Counter({
+            name: "redis_cache_misses_total",
+            help: "Total Redis cache misses",
+            labelNames: ["cache"],
             registers: [this.registry],
         });
     }
