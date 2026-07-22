@@ -7,6 +7,7 @@ import { PostModule } from './post/post.module';
 import { TimelineModule } from './timeline/timeline.module';
 import { HealthModule } from './health/health.module';
 import { MetricsModule } from './metrics/metrics.module';
+import { RedisModule } from './redis/redis.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { MetricsModule } from './metrics/metrics.module';
     }),
     MetricsModule,
     PrismaModule,
+    RedisModule,
     UserModule,
     FollowModule,
     PostModule,

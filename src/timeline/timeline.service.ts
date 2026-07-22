@@ -1,14 +1,18 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateTimelineDto } from './dto/create-timeline.dto';
 import { UpdateTimelineDto } from './dto/update-timeline.dto';
 
 import { PrismaService } from '../../src/prisma/prisma.service';
 import { TimelineQueryDto } from './dto/timeline-query.dto';
 import { Prisma } from '@prisma/client';
+import Redis from 'ioredis';
 
 @Injectable()
 export class TimelineService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService,
+    @Inject('REDIS_CLIENT')
+    private readonly redis: Redis,
+  ) { }
 
   create(createTimelineDto: CreateTimelineDto) {
     return 'This action adds a new timeline';
