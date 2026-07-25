@@ -148,7 +148,7 @@
             "uid": "Prometheus"
           },
           "editorMode": "code",
-          "expr": "sum(redis_cache_hits_total) / (sum(redis_cache_hits_total) + sum(redis_cache_misses_total))",
+          "expr": "(sum(redis_cache_hits_total) / (sum(redis_cache_hits_total) + sum(redis_cache_misses_total))) or on() vector(0)",
           "instant": true,
           "range": false,
           "refId": "A"
