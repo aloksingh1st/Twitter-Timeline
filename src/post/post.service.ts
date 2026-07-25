@@ -2,13 +2,17 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { PrismaService } from '../../src/prisma/prisma.service';
+// import { KafkaService } from 'src/kafka/kafka.service';
+import { KafkaService } from "../kafka/kafka.service"
 
 @Injectable()
 export class PostService {
 
 
-  constructor(private readonly prisma: PrismaService) { }
-  
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly kafka: KafkaService) { }
+
   async create(dto: CreatePostDto) {
     const author = await this.prisma.user.findUnique({
       where: {
@@ -20,12 +24,22 @@ export class PostService {
       throw new NotFoundException('Author not found');
     }
 
-    return this.prisma.post.create({
+    const post = this.prisma.post.create({
       data: {
         authorId: dto.authorId,
         content: dto.content,
       },
     });
+
+
+    // await this.kafka.publish("post-created", {
+    //   postId: post.id,
+    //   authorId: post.authorId,
+    //   createdAt: post.createdAt,
+    // });
+
+
+    return post;
   }
 
   findAll() {
