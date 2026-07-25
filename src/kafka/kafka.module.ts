@@ -96,12 +96,12 @@ import { TimelineModule } from 'src/timeline/timeline.module';
                             waitForLeaders: true,
                             topics: topicsToCreate,
                         });
-                        console.log(`✅ Programmatically created topics: ${topicsToCreate.map(t => t.topic).join(', ')}`);
+                        console.log(` Programmatically created topics: ${topicsToCreate.map(t => t.topic).join(', ')}`);
                     } else {
-                        console.log('✅ All required Kafka topics already exist.');
+                        console.log('All required Kafka topics already exist.');
                     }
                 } catch (error) {
-                    console.error('❌ Failed to verify/create Kafka topics:', error);
+                    console.error('Failed to verify/create Kafka topics:', error);
                 } finally {
                     // Always disconnect the admin client to free up connections
                     await admin.disconnect();
