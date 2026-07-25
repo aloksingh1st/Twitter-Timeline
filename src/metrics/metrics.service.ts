@@ -127,7 +127,7 @@ export class MetricsService {
 
 
         this.timelineFanoutFailures = new Counter({
-            name: "timeline_fanout_failure",
+            name: "timeline_fanout_failures_total",
             help: "Timeline fan-out failures",
             registers: [this.registry],
         });

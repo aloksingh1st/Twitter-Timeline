@@ -42,8 +42,9 @@
             "uid": "Prometheus"
           },
           "editorMode": "code",
-          "expr": "rate(kafka_events_published_total[1m])",
+          "expr": "sum(rate(kafka_events_published_total[1m])) by (topic)",
           "instant": false,
+          "legendFormat": "{{topic}}",
           "range": true,
           "refId": "A"
         }
@@ -71,7 +72,7 @@
           "placement": "bottom"
         }
       },
-      "description": "Rate of Kafka events published per second."
+      "description": "Rate of Kafka events published per second grouped by topic."
     },
     {
       "id": 2,
@@ -94,8 +95,9 @@
             "uid": "Prometheus"
           },
           "editorMode": "code",
-          "expr": "rate(kafka_events_consumed_total[1m])",
+          "expr": "sum(rate(kafka_events_consumed_total[1m])) by (topic)",
           "instant": false,
+          "legendFormat": "{{topic}}",
           "range": true,
           "refId": "A"
         }
@@ -123,7 +125,7 @@
           "placement": "bottom"
         }
       },
-      "description": "Rate of Kafka events consumed per second."
+      "description": "Rate of Kafka events consumed per second grouped by topic."
     },
     {
       "id": 3,
@@ -146,8 +148,9 @@
             "uid": "Prometheus"
           },
           "editorMode": "code",
-          "expr": "rate(kafka_publish_failures_total[5m])",
+          "expr": "sum(rate(kafka_publish_failures_total[5m])) by (topic) or on() vector(0)",
           "instant": false,
+          "legendFormat": "{{topic}}",
           "range": true,
           "refId": "A"
         }
@@ -211,8 +214,9 @@
             "uid": "Prometheus"
           },
           "editorMode": "code",
-          "expr": "rate(kafka_consumer_failures_total[5m])",
+          "expr": "sum(rate(kafka_consumer_failures_total[5m])) by (topic) or on() vector(0)",
           "instant": false,
+          "legendFormat": "{{topic}}",
           "range": true,
           "refId": "A"
         }
@@ -276,8 +280,9 @@
             "uid": "Prometheus"
           },
           "editorMode": "code",
-          "expr": "sum(kafka_events_published_total)",
+          "expr": "sum(kafka_events_published_total) by (topic) or on() vector(0)",
           "instant": true,
+          "legendFormat": "{{topic}}",
           "range": false,
           "refId": "A"
         }
@@ -328,8 +333,9 @@
             "uid": "Prometheus"
           },
           "editorMode": "code",
-          "expr": "sum(kafka_events_consumed_total)",
+          "expr": "sum(kafka_events_consumed_total) by (topic) or on() vector(0)",
           "instant": true,
+          "legendFormat": "{{topic}}",
           "range": false,
           "refId": "A"
         }

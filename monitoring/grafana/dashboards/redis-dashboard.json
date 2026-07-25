@@ -42,8 +42,9 @@
             "uid": "Prometheus"
           },
           "editorMode": "code",
-          "expr": "rate(redis_cache_hits_total[1m])",
+          "expr": "sum(rate(redis_cache_hits_total[1m])) by (cache)",
           "instant": false,
+          "legendFormat": "{{cache}}",
           "range": true,
           "refId": "A"
         }
@@ -71,7 +72,7 @@
           "placement": "bottom"
         }
       },
-      "description": "Rate of cache hits per second."
+      "description": "Rate of cache hits per second grouped by cache store."
     },
     {
       "id": 2,
@@ -94,8 +95,9 @@
             "uid": "Prometheus"
           },
           "editorMode": "code",
-          "expr": "rate(redis_cache_misses_total[1m])",
+          "expr": "sum(rate(redis_cache_misses_total[1m])) by (cache)",
           "instant": false,
+          "legendFormat": "{{cache}}",
           "range": true,
           "refId": "A"
         }
@@ -123,7 +125,7 @@
           "placement": "bottom"
         }
       },
-      "description": "Rate of cache misses per second."
+      "description": "Rate of cache misses per second grouped by cache store."
     },
     {
       "id": 3,
@@ -212,8 +214,9 @@
             "uid": "Prometheus"
           },
           "editorMode": "code",
-          "expr": "sum(redis_cache_hits_total)",
+          "expr": "sum(redis_cache_hits_total) by (cache) or on() vector(0)",
           "instant": true,
+          "legendFormat": "{{cache}}",
           "range": false,
           "refId": "A"
         }
@@ -264,8 +267,9 @@
             "uid": "Prometheus"
           },
           "editorMode": "code",
-          "expr": "sum(redis_cache_misses_total)",
+          "expr": "sum(redis_cache_misses_total) by (cache) or on() vector(0)",
           "instant": true,
+          "legendFormat": "{{cache}}",
           "range": false,
           "refId": "A"
         }
