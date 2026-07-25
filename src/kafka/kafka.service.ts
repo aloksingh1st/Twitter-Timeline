@@ -1,7 +1,7 @@
 // src/kafka/kafka.service.ts
 
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import * as KafkaJS from 'kafkajs'; 
+import * as KafkaJS from 'kafkajs';
 import { MetricsService } from '../metrics/metrics.service';
 
 @Injectable()
@@ -10,10 +10,10 @@ export class KafkaService {
 
   constructor(
     @Inject('KAFKA_PRODUCER')
-    private readonly producer: KafkaJS.Producer, 
+    private readonly producer: KafkaJS.Producer,
 
     private readonly metrics: MetricsService,
-  ) {}
+  ) { }
 
   /**
    * Publish an event to Kafka.
@@ -31,6 +31,10 @@ export class KafkaService {
 
       this.logger.log(`Published event to "${topic}"`);
 
+      this.metrics.kafkaEventsPublished.inc({
+        topic,
+      });
+
       // Uncomment once Kafka metrics are added
       // this.metrics.kafkaEventsPublished.inc({ topic });
 
@@ -40,6 +44,10 @@ export class KafkaService {
         error instanceof Error ? error.stack : undefined,
       );
 
+
+      this.metrics.kafkaPublishFailures.inc({
+        topic,
+      });
       // notes for Kafka failure metrics are added
       // this.metrics.kafkaPublishFailures.inc({ topic });
 

@@ -14,6 +14,7 @@ export class TimelineService {
   private readonly logger = new Logger(TimelineService.name);
 
 
+
   constructor(private readonly prisma: PrismaService,
     @Inject('REDIS_CLIENT')
     private readonly redis: Redis,
@@ -132,51 +133,62 @@ export class TimelineService {
       `Starting fan-out for post ${event.postId}`,
     );
 
-    // Find all followers of the author
-    const followers = await this.prisma.follow.findMany({
-      where: {
-        followeeId: event.authorId,
-      },
-      select: {
-        followerId: true,
-      },
-    });
+    const end =
+      this.metrics.timelineFanoutDuration.startTimer();
 
-    // Optional: include the author's own timeline
-    const timelineEntries = [
-      {
-        userId: event.authorId,
-        postId: event.postId,
-      },
-      ...followers.map((follower) => ({
-        userId: follower.followerId,
-        postId: event.postId,
-      })),
-    ];
+    try {
+      const followers = await this.prisma.follow.findMany({
+        where: {
+          followeeId: event.authorId,
+        },
+        select: {
+          followerId: true,
+        },
+      });
 
-    if (timelineEntries.length === 0) {
-      this.logger.warn(
-        `No followers found for author ${event.authorId}`,
+      const timelineEntries = [
+        {
+          userId: event.authorId,
+          postId: event.postId,
+        },
+        ...followers.map((follower) => ({
+          userId: follower.followerId,
+          postId: event.postId,
+        })),
+      ];
+
+      if (timelineEntries.length === 0) {
+        this.logger.warn(
+          `No followers found for author ${event.authorId}`,
+        );
+        return;
+      }
+
+      await this.prisma.timelineFeed.createMany({
+        data: timelineEntries,
+        skipDuplicates: true,
+      });
+
+      this.metrics.timelineFanoutTotal.inc();
+
+      this.metrics.timelineFollowersProcessed.observe(
+        timelineEntries.length,
       );
-      return;
+
+      this.logger.log(
+        `Fan-out completed. Inserted ${timelineEntries.length} timeline entries.`,
+      );
+    } catch (error) {
+      this.metrics.timelineFanoutFailures.inc();
+
+      this.logger.error(
+        `Fan-out failed for post ${event.postId}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+
+      throw error;
+    } finally {
+      end();
     }
-
-    await this.prisma.timelineFeed.createMany({
-      data: timelineEntries,
-      skipDuplicates: true,
-    });
-
-    this.logger.log(
-      `Fan-out completed. Inserted ${timelineEntries.length} timeline entries.`,
-    );
   }
 }
-
-
-// TimelineFeed table created.
-//  TimelineConsumer consumes post-created events.
-//  TimelineService.fanOutPost() bulk-inserts feed entries.
-
-//  Timeline endpoint reads from TimelineFeed instead of reconstructing timelines.
-//  Benchmarks comparing fan-out-on-read vs. fan-out-on-write.
-//  Grafana panels showing Kafka consumer activity and fan-out performance.

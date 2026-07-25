@@ -9,6 +9,7 @@ import {
 import * as kafkajs from 'kafkajs';
 import { TimelineService } from 'src/timeline/timeline.service';
 import { PostCreatedEvent } from '../post-created.event';
+import { MetricsService } from 'src/metrics/metrics.service';
 
 @Injectable()
 export class TimelineConsumer
@@ -18,6 +19,7 @@ export class TimelineConsumer
     constructor(
         @Inject('KAFKA_CONSUMER')
         private readonly consumer: kafkajs.Consumer,
+        private metrics: MetricsService,
 
         private readonly timelineService: TimelineService,
     ) { }
@@ -41,6 +43,10 @@ export class TimelineConsumer
                         return;
                     }
 
+                    this.metrics.kafkaEventsConsumed.inc({
+                        topic,
+                    });
+
                     const event = JSON.parse(
                         message.value.toString(),
                     ) as PostCreatedEvent;
@@ -53,8 +59,13 @@ export class TimelineConsumer
 
                     // Phase 9
                     await this.timelineService.fanOutPost(event);
-                    
+
                 } catch (error) {
+
+                    this.metrics.kafkaConsumerFailures.inc({
+                        topic,
+                    });
+
                     this.logger.error(
                         'Failed to process Kafka event',
                         error instanceof Error ? error.stack : undefined,

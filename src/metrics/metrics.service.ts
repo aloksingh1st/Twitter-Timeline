@@ -18,6 +18,21 @@ export class MetricsService {
     readonly cacheHits: Counter<string>;
     readonly cacheMisses: Counter<string>;
 
+
+    readonly kafkaEventsPublished: Counter<string>;
+    readonly kafkaEventsConsumed: Counter<string>;
+
+    readonly kafkaPublishFailures: Counter<string>;
+    readonly kafkaConsumerFailures: Counter<string>;
+
+    readonly timelineFanoutTotal: Counter<string>;
+
+    readonly timelineFanoutFailures: Counter<string>;
+
+    readonly timelineFanoutDuration: Histogram<string>;
+
+    readonly timelineFollowersProcessed: Histogram<string>;
+
     constructor() {
         collectDefaultMetrics({
             register: this.registry,
@@ -68,6 +83,87 @@ export class MetricsService {
             name: "redis_cache_misses_total",
             help: "Total Redis cache misses",
             labelNames: ["cache"],
+            registers: [this.registry],
+        });
+
+
+
+
+        // Kafla ,metrics 
+
+        this.kafkaEventsPublished = new Counter({
+            name: "kafka_events_published_total",
+            help: "Total Kafka events published",
+            labelNames: ["topic"],
+            registers: [this.registry],
+        });
+
+        this.kafkaEventsConsumed = new Counter({
+            name: "kafka_events_consumed_total",
+            help: "Total Kafka events consumed",
+            labelNames: ["topic"],
+            registers: [this.registry],
+        });
+
+        this.kafkaPublishFailures = new Counter({
+            name: "kafka_publish_failures_total",
+            help: "Kafka publish failures",
+            labelNames: ["topic"],
+            registers: [this.registry],
+        });
+
+        this.kafkaConsumerFailures = new Counter({
+            name: "kafka_consumer_failures_total",
+            help: "Kafka consumer failures",
+            labelNames: ["topic"],
+            registers: [this.registry],
+        });
+
+        this.timelineFanoutTotal = new Counter({
+            name: "timeline_fanout_total",
+            help: "Timeline fan-out executions",
+            registers: [this.registry],
+        });
+
+
+        this.timelineFanoutFailures = new Counter({
+            name: "timeline_fanout_failure",
+            help: "Timeline fan-out failures",
+            registers: [this.registry],
+        });
+
+        this.timelineFanoutDuration = new Histogram({
+            name: "timeline_fanout_duration_seconds",
+            help: "Timeline fan-out duration",
+            buckets: [
+                0.001,
+                0.005,
+                0.01,
+                0.05,
+                0.1,
+                0.25,
+                0.5,
+                1,
+                2,
+                5,
+            ],
+            registers: [this.registry],
+        });
+
+        this.timelineFollowersProcessed = new Histogram({
+            name: "timeline_followers_processed",
+            help: "Followers processed during a fan-out",
+            buckets: [
+                1,
+                5,
+                10,
+                50,
+                100,
+                500,
+                1000,
+                5000,
+                10000,
+            ],
             registers: [this.registry],
         });
     }
