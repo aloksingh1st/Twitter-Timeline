@@ -52,8 +52,8 @@ export class TimelineConsumer
                     this.logger.debug(event);
 
                     // Phase 9
-                    // await this.timelineService.fanOut(event);
-
+                    await this.timelineService.fanOutPost(event);
+                    
                 } catch (error) {
                     this.logger.error(
                         'Failed to process Kafka event',

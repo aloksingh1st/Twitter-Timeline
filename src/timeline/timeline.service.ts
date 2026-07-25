@@ -1,4 +1,4 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { CreateTimelineDto } from './dto/create-timeline.dto';
 import { UpdateTimelineDto } from './dto/update-timeline.dto';
 
@@ -7,9 +7,13 @@ import { TimelineQueryDto } from './dto/timeline-query.dto';
 import { Prisma } from '@prisma/client';
 import Redis from 'ioredis';
 import { MetricsService } from 'src/metrics/metrics.service';
+import { PostCreatedEvent } from 'src/kafka/post-created.event';
 
 @Injectable()
 export class TimelineService {
+  private readonly logger = new Logger(TimelineService.name);
+
+
   constructor(private readonly prisma: PrismaService,
     @Inject('REDIS_CLIENT')
     private readonly redis: Redis,
@@ -41,57 +45,9 @@ export class TimelineService {
       throw new NotFoundException('User not found');
     }
 
-
-
-    const cacheKey = `following:${userId}`;
-
-    const cached = await this.redis.get(cacheKey);
-
-    let follows;
-
-    if (cached) {
-      this.metrics.cacheHits.inc({
-        cache: "following",
-      });
-      follows = JSON.parse(cached);
-    } else {
-
-      this.metrics.cacheMisses.inc({
-        cache: "following",
-      });
-
-      follows = await this.prisma.follow.findMany({
-        where: {
-          followerId: userId,
-        },
-        select: {
-          followeeId: true,
-        },
-      });
-
-      await this.redis.set(
-        cacheKey,
-        JSON.stringify(follows),
-        "EX",
-        300,
-      );
-    }
-
-    const followeeIds = follows.map(f => f.followeeId);
-
-    // 3. User follows nobody
-    if (followeeIds.length === 0) {
-      return {
-        posts: [],
-        nextCursor: null,
-      };
-    }
-
-    // 4. Build where clause
-    const where: Prisma.PostWhereInput = {
-      authorId: {
-        in: followeeIds,
-      },
+    // 2. Build cursor condition
+    const where: Prisma.TimelineFeedWhereInput = {
+      userId,
     };
 
     if (cursorCreatedAt && cursorId) {
@@ -103,48 +59,58 @@ export class TimelineService {
         },
         {
           createdAt: new Date(cursorCreatedAt),
-          id: {
+          postId: {
             lt: cursorId,
           },
         },
       ];
     }
 
-    // 5. Fetch one extra row
-    const posts = await this.prisma.post.findMany({
+    // 3. Read from TimelineFeed
+    const timeline = await this.prisma.timelineFeed.findMany({
       where,
+      include: {
+        post: {
+          include: {
+            author: true,
+          },
+        },
+      },
       orderBy: [
         {
           createdAt: 'desc',
         },
         {
-          id: 'desc',
+          postId: 'desc',
         },
       ],
       take: limit + 1,
     });
 
-    // 6. Determine if another page exists
-    const hasNextPage = posts.length > limit;
+    // 4. Pagination
+    const hasNextPage = timeline.length > limit;
 
     if (hasNextPage) {
-      posts.pop();
+      timeline.pop();
     }
 
-    // 7. Generate next cursor
-    let nextCursor: { cursorCreatedAt: string; cursorId: string } | null = null;
+    // 5. Next cursor
+    let nextCursor: {
+      cursorCreatedAt: string;
+      cursorId: string;
+    } | null = null;
 
     if (hasNextPage) {
-      const lastPost = posts[posts.length - 1];
+      const last = timeline[timeline.length - 1];
 
       nextCursor = {
-        cursorCreatedAt: lastPost.createdAt.toISOString(),
-        cursorId: lastPost.id,
+        cursorCreatedAt: last.createdAt.toISOString(),
+        cursorId: last.postId,
       };
     }
 
     return {
-      posts,
+      posts: timeline.map((item) => item.post),
       nextCursor,
     };
   }
@@ -160,4 +126,57 @@ export class TimelineService {
   remove(id: number) {
     return `This action removes a #${id} timeline`;
   }
+
+  async fanOutPost(event: PostCreatedEvent): Promise<void> {
+    this.logger.log(
+      `Starting fan-out for post ${event.postId}`,
+    );
+
+    // Find all followers of the author
+    const followers = await this.prisma.follow.findMany({
+      where: {
+        followeeId: event.authorId,
+      },
+      select: {
+        followerId: true,
+      },
+    });
+
+    // Optional: include the author's own timeline
+    const timelineEntries = [
+      {
+        userId: event.authorId,
+        postId: event.postId,
+      },
+      ...followers.map((follower) => ({
+        userId: follower.followerId,
+        postId: event.postId,
+      })),
+    ];
+
+    if (timelineEntries.length === 0) {
+      this.logger.warn(
+        `No followers found for author ${event.authorId}`,
+      );
+      return;
+    }
+
+    await this.prisma.timelineFeed.createMany({
+      data: timelineEntries,
+      skipDuplicates: true,
+    });
+
+    this.logger.log(
+      `Fan-out completed. Inserted ${timelineEntries.length} timeline entries.`,
+    );
+  }
 }
+
+
+// TimelineFeed table created.
+//  TimelineConsumer consumes post-created events.
+//  TimelineService.fanOutPost() bulk-inserts feed entries.
+
+//  Timeline endpoint reads from TimelineFeed instead of reconstructing timelines.
+//  Benchmarks comparing fan-out-on-read vs. fan-out-on-write.
+//  Grafana panels showing Kafka consumer activity and fan-out performance.
