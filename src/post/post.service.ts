@@ -24,7 +24,7 @@ export class PostService {
       throw new NotFoundException('Author not found');
     }
 
-    const post = this.prisma.post.create({
+    const post = await this.prisma.post.create({
       data: {
         authorId: dto.authorId,
         content: dto.content,
@@ -32,11 +32,11 @@ export class PostService {
     });
 
 
-    // await this.kafka.publish("post-created", {
-    //   postId: post.id,
-    //   authorId: post.authorId,
-    //   createdAt: post.createdAt,
-    // });
+    await this.kafka.publish("post-created", {
+      postId: post.id,
+      authorId: post.authorId,
+      createdAt: post.createdAt,
+    });
 
 
     return post;
